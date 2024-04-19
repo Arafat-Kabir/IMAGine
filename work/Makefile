@@ -74,8 +74,16 @@ clean:     # clean up garbage files   # <command>
 
 
 clean-all: clean    # clean up everything  # <command>
-	@echo Nothing to do
+	rm -rf imagine-ip
+	rm -rf proj-zcu104
+
 
 
 
 # ---- Main Targets ----
+proj-zcu104:  # creates a ZCU-104-based IMAGine project  # <command>
+	unzip -q ../ip/imagine_gemv_1.0.zip -d imagine-ip
+	mkdir proj-zcu104
+	cp ../sup/proj-zcu104/create-proj.tcl  ./proj-zcu104
+	cd proj-zcu104 && vivado -source create-proj.tcl
+
