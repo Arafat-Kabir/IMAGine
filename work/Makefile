@@ -70,7 +70,7 @@ list-all:				# <command>
 
 # Clean up routines
 clean:     # clean up garbage files   # <command>
-	@echo Nothing to do
+	@echo Nothing to do for clean
 
 
 clean-all: clean    # clean up everything  # <command>
@@ -87,3 +87,7 @@ proj-zcu104:  # creates a ZCU-104-based IMAGine project  # <command>
 	cp ../sup/proj-zcu104/create-proj.tcl  ./proj-zcu104
 	cd proj-zcu104 && vivado -source create-proj.tcl
 
+
+prog-ex01:   # <command>
+	cp -r ../sup/ex01/ .
+	@echo 'NOTE: Add imagine_assembler to your $$PYTHONPATH environment variable'

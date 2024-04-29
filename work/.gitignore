@@ -1,2 +1,2 @@
-proj-*/
-imagine-ip/*
+*/*
+!Makefile
