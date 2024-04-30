@@ -50,6 +50,10 @@
 #include "xil_printf.h"
 #include "imagine_driver.h"
 #include "imagine_prog.h"
+#include "imagine_util.h"
+
+
+#define IMG_VECLEN 80	// IMAGine output vector length
 
 
 // References to the IMAGine programs and data
@@ -63,12 +67,8 @@ void runProg_ex01_loader() {
 	// Push the instructions
 	xil_printf("INFO: ex01_loader has %d instructions\n", ex01_loader.size);
 	print("INFO: Pushing loader program\n");
-	for(int i=0; i<ex01_loader.size; ++i) {
-		xil_printf("%d: %x\n", i, ex01_loader.instruction[i]);
-		img_pushInstruction(ex01_loader.instruction[i]);
-	}
+	img_pushProgram(&ex01_loader);
 	xil_printf("INFO: Finished pushing ex01_loader program\n");
-
 }
 
 
@@ -76,10 +76,7 @@ void runProg_ex01_kernel() {
 	// Push the instructions
 	xil_printf("INFO: ex01_kernel has %d instructions\n", ex01_kernel.size);
 	print("INFO: Pushing ex01-kernel program\n");
-	for(int i=0; i<ex01_kernel.size; ++i) {
-		xil_printf("%d: %x\n", i, ex01_kernel.instruction[i]);
-		img_pushInstruction(ex01_kernel.instruction[i]);
-	}
+	img_pushProgram(&ex01_kernel);
 
 	// Wait for EOV interrupt (polling)
 	while(!img_isEOV()) print("INFO: Waiting for IMAGine EOV interrupt ...\n");
@@ -87,21 +84,61 @@ void runProg_ex01_kernel() {
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
-	IMAGine_Dout dout;
-	int outIndex = 0;
+	img_vecval_t vecOut[IMG_VECLEN];
+	int outSize = img_popVector(vecOut, IMG_VECLEN);
+	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
+
+	// convert to floating point values
+	print("INFO: Printing floating point representation\n");
+	float vecOutf[IMG_VECLEN];
+	img_fxp2float(vecOutf, vecOut, outSize, ex01_kernel.fracWidth);
+	for(int i=0; i<outSize; ++i) {
+		xil_printf("fxp: %d  float: ", vecOut[i]);
+		img_print_float(vecOutf[i]);
+		print("\n");
+	}
+	print("INFO: Done\n");
+
+
+	// test the output
 	const char *matched = "false";
-	do {
-		dout = img_popData();
-		if(outIndex < ex01_testarr_size) {
-			if(dout.data == ex01_testarr[outIndex]) matched = "true";
-			else matched = "false";
-		} else {
-			matched = "N/A";
-		}
-		xil_printf("outIndex: %2d  status: %x  attrib: %2x  data: %-6d  matched: %s\n",
-					outIndex,  dout.status,    dout.attrib, dout.data, matched);
-		++outIndex;
-	} while(dout.status == IMAGINE_DOUT_VALID);
+	for(int i=0; i < ex01_testarr_size; ++i) {
+		if(vecOut[i] == ex01_testarr[i]) matched = "true";
+		else matched = "false";
+		xil_printf("index: %2d  data: %-6d  exp: %-6d  matched: %s\n",
+					i, vecOut[i], ex01_testarr[i], matched);
+
+	}
+	return;
+}
+
+
+void runProg_ex01_kernelf() {
+	img_pushProgram(&ex01_kernel);
+	while(!img_isEOV()) print("INFO: Waiting for IMAGine EOV interrupt ...\n");
+	print("INFO: IMAGine EOV interrupt set\n");
+
+	// Retrieve output vector and test it agains the expected values
+	print("INFO: Pulling out data from IMAGine FIFO-out\n");
+	float vecOut[IMG_VECLEN];
+	int outSize = img_popVectorf(vecOut, IMG_VECLEN, ex01_kernel.fracWidth);
+	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
+
+	// check the output
+	const char * matched;
+	for(int i=0; i<outSize; ++i) {
+		float exp = (ex01_testarr[i] * 1.0) / (1<<8);
+		if(exp == vecOut[i]) matched = "true";
+		else matched = "false";
+		// formatted print
+		xil_printf("index: %2d  data: ", i);
+		img_print_float(vecOut[i]);
+		print("  exp: ");
+		img_print_float(exp);
+		xil_printf("  matched: %s\n", matched);
+
+	}
+	return;
 }
 
 
@@ -112,11 +149,8 @@ int main()
 
     runProg_ex01_loader();
     runProg_ex01_kernel();
-    for(int i=0; i<4; ++i) {
-		print("\n\nINFO: Running the ex01_kernel again\n");
-		runProg_ex01_kernel();
-    }
-
+    runProg_ex01_kernelf();
+    
     cleanup_platform();
     return 0;
 }

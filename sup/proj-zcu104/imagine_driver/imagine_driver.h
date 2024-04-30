@@ -10,11 +10,14 @@
 #define IMAGINE_DOUT_VALID    1
 
 
+// IMAGine output vector value type
+typedef int16_t img_vecval_t;
+
 // IMAGine data output structure
 typedef struct {
-	int16_t data;
-	uint8_t attrib;
-	uint8_t status;
+	img_vecval_t data;
+	uint8_t      attrib;
+	uint8_t      status;
 } IMAGine_Dout;
 
 
