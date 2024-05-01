@@ -14,7 +14,11 @@ int img_fxp2float(float * pfloat,
 				  const img_vecval_t * pfxp,
 				  const int size,
 				  const int fracWidth);
-void img_print_float(double val);
+
+// Misc. utilities
+void img_printFloat(double val);
+void img_pollEOV();
+void img_pollEOVmsg();
 
 
 #endif  // IMAGINE_UTIL_H

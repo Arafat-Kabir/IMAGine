@@ -77,10 +77,7 @@ void runProg_ex01_kernel() {
 	xil_printf("INFO: ex01_kernel has %d instructions\n", ex01_kernel.size);
 	print("INFO: Pushing ex01-kernel program\n");
 	img_pushProgram(&ex01_kernel);
-
-	// Wait for EOV interrupt (polling)
-	while(!img_isEOV()) print("INFO: Waiting for IMAGine EOV interrupt ...\n");
-	print("INFO: IMAGine EOV interrupt set\n");
+	img_pollEOVmsg();	// Wait for EOV interrupt
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
@@ -94,7 +91,7 @@ void runProg_ex01_kernel() {
 	img_fxp2float(vecOutf, vecOut, outSize, ex01_kernel.fracWidth);
 	for(int i=0; i<outSize; ++i) {
 		xil_printf("fxp: %d  float: ", vecOut[i]);
-		img_print_float(vecOutf[i]);
+		img_printFloat(vecOutf[i]);
 		print("\n");
 	}
 	print("INFO: Done\n");
@@ -115,8 +112,7 @@ void runProg_ex01_kernel() {
 
 void runProg_ex01_kernelf() {
 	img_pushProgram(&ex01_kernel);
-	while(!img_isEOV()) print("INFO: Waiting for IMAGine EOV interrupt ...\n");
-	print("INFO: IMAGine EOV interrupt set\n");
+	img_pollEOVmsg();
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
@@ -132,9 +128,9 @@ void runProg_ex01_kernelf() {
 		else matched = "false";
 		// formatted print
 		xil_printf("index: %2d  data: ", i);
-		img_print_float(vecOut[i]);
+		img_printFloat(vecOut[i]);
 		print("  exp: ");
-		img_print_float(exp);
+		img_printFloat(exp);
 		xil_printf("  matched: %s\n", matched);
 
 	}

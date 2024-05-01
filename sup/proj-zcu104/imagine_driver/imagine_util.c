@@ -82,9 +82,28 @@ int img_fxp2float(float * pfloat,
 }
 
 
-// Prints the floating point representation upto 5 decimal digits
-void img_print_float(double val) {
+// Prints the floating point representation upto 5 decimal digits.
+// This utility is used because xil_printf() does not support %f.
+// @param val [in]  Floating point value to print
+void img_printFloat(double val) {
 	int whole = val;
 	int frac  = (val-whole)*100000;	// 5 digits after decimal point
 	xil_printf("%d.%05d", whole, frac);
 }
+
+
+// Polls IMAGine EOV signal
+void img_pollEOV() {
+	while(!img_isEOV());
+}
+
+
+// Polls IMAGine EOV signal and prints messages while waiting.
+// This version is good for debugging. You'll know if you
+// get stuck for a while while polling.
+void img_pollEOVmsg() {
+	print("WAIT: Polling IMAGine-EOV ");
+	while(!img_isEOV()) print(". ");
+	print("Done\n");
+}
+
