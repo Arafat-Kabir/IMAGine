@@ -5,6 +5,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+/**** AK-NOTE: ****/
+/* Change these constants based on your IP's parameters. */
+
+// Hardware IP Parameters
+#define IMAGINE_PEPERBLOCK 16
+#define IMAGINE_PEREGWIDTH 16
+
+/******************/
+
+
 // Values for IMAGine_Dout.status
 #define IMAGINE_DOUT_INVALID  0
 #define IMAGINE_DOUT_VALID    1

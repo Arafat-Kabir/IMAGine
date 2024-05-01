@@ -38,6 +38,42 @@
 #define BIT_IMG_EOVINT (1u << 0)
 
 
+// Internal types
+typedef uint16_t  img_bramaddr_t;   // address type of BRAM rows
+typedef uint16_t  img_bramrow_t;	// data type of each row of BRAM
+typedef uint8_t   img_bramid_t;		// data type of BRAM ROW/COL IDs
+
+
+// Pre-compiled instruction template functions
+#define INSTR_ADDR_WIDTH  10   // width of the ADDR field
+#define INSTR_DATA_WIDTH  16   // width of the DATA field
+#define INSTR_ID_WIDTH    8    // width of PiCaSO block row/column IDs
+
+
+
+static inline
+uint32_t img_genMV_SELECT_ALL() {
+	return 0x18C00000;
+}
+
+static inline
+uint32_t img_genMV_WRITE(img_bramaddr_t addr, img_bramrow_t data) {
+	// [subm-code:2 = 00b] [opcode:4 = 0001b] [addr][data]
+	return 0x04000000 | (addr << INSTR_DATA_WIDTH) | data;
+}
+
+static inline
+uint32_t img_genMV_SELECT_COL(img_bramid_t colID) {
+	// [subm-code:2 = 00b] [opcode:4 = 0110] [Fn, xx] [Row, Col]
+	return 0x18000000 | colID;
+}
+
+
+// Utility macros, only pass variables, not statements
+#define MIN(a, b)  ((a) < (b) ? (a) : (b))
+#define MAX(a, b)  ((a) > (b) ? (a) : (b))
+
+
 // Register read-write utilities
 static inline
 uint32_t readImgReg(uintptr_t regOffset)
@@ -135,6 +171,33 @@ bool img_isEovSet() {
 }
 
 
+// Given an array size <= to the no. of PEs in a block,
+// returns a bit-level transposed array (columnar layout).
+// @param outArr [out]  output buffer to put BRAM rows.
+// @param peArr  [in]   input array of PE registers.
+// @param size   [in]   size of peArr.
+// @return  Number of non-zero rows in bram. -ve value is error code.
+static int img_makePe2BramBlock(
+	img_bramrow_t *outArr,
+	const img_vecval_t *peArr,
+	int size)
+{
+    static const int peCount  = IMAGINE_PEPERBLOCK;      // PE column per BRAM block
+    static const int regWidth = IMAGINE_PEREGWIDTH;      // PE register width
+    if(size > peCount) return -1;
+    int nzCount = 0;        // no. of non-zero rows
+    for(int bitNo=0; bitNo<regWidth; ++bitNo) {
+    	img_bramrow_t row = 0;
+        for(int peNo=0; peNo<size; ++peNo) {
+        	img_bramrow_t peBit = (peArr[peNo] >> bitNo) & 1;   // extract the bit from the pe-register
+            row |= peBit << peNo; // put the bit into its rightful place in BRAM row
+        }
+        outArr[bitNo] = row;      // put the row into the output array
+        if(row != 0) ++nzCount;   // count non-zero rows
+    }
+    return nzCount;
+}
+
 
 
 // ---- User APIs
@@ -188,4 +251,69 @@ void img_test() {
 	img_writeFinpData(0xDEAFCAFE);
 	xil_printf("REG0 : %X\n", readImgReg(REG0));
 	xil_printf("REG15: %X\n", readImgReg(REG15));
+}
+
+
+// Clears the specified GEMV register.
+// @param reg [in]  Register number.
+// @return  Number of instructions pushed.
+//          -ve return value on error.
+int img_mv_CLRREG(int reg) {
+	img_bramaddr_t base = reg*IMAGINE_PEREGWIDTH; 	// PE register base address
+	img_pushInstruction(img_genMV_SELECT_ALL());	// Select all Blocks
+	for(int i=0; i<IMAGINE_PEREGWIDTH; ++i) {
+		img_pushInstruction(img_genMV_WRITE(base++, 0));  // write zeros to all register rows
+	}
+	return IMAGINE_PEREGWIDTH+1;	// no. of instructions pushed
+}
+
+
+// Loads a row vector into IMAGine GEMV register.
+// @param reg    [in]  Destination register no.
+// @param vector [in]  Pointer to the row vector to load into
+//                     the register.
+// @param size   [in]  Length of the vector.
+// @return  Number instructions pushed, including the clearReg() writes.
+//          -ve return value on error.
+int img_mv_LOADVEC_ROW(const int reg, const img_vecval_t *vector, const int size) {
+    static const int peCount  = IMAGINE_PEPERBLOCK;      // PE column per BRAM block
+    static const int regWidth = IMAGINE_PEREGWIDTH;      // PE register width
+    const img_bramaddr_t base = reg*IMAGINE_PEREGWIDTH;  // PE register base address
+    img_bramrow_t bramImage[IMAGINE_PEREGWIDTH];		 // buffer to hold BRAM image of one register
+    // Steps:
+    //	 - clear the register
+    //   - go through each set of peCount of the array
+    //   - get the BRAM image
+    //   - write the BRAM rows of the destination register
+    int bramIndex = 0;
+    int instCount = 0;	// No. of instructions pushed
+    instCount = img_mv_CLRREG(reg);		// clear the register
+    for(int i=0; i<size; i+=peCount, ++bramIndex) {
+    	int sliceLen = MIN(peCount, size-1);	// MIN() required for the last slice
+    	int nzCount = img_makePe2BramBlock(bramImage, &vector[i], sliceLen);  // get BRAM image
+    	if(nzCount < 0) return -1;	// bramImage generation error
+    	if(nzCount > 0) {
+    		img_pushInstruction(img_genMV_SELECT_COL(bramIndex));  // select the BRAM column
+    		++instCount;
+    		// push write instruction for each non-zero BRAM rows
+    		for(int r=0; r<regWidth; ++r) {
+    			img_bramrow_t data = bramImage[r];
+    			if(data != 0) {
+    				// push the data only if non-zero
+					img_pushInstruction(img_genMV_WRITE(base+r, data));
+					++instCount;
+    			}
+    		}
+    	}
+    }
+    return instCount;
+}
+
+
+// Selects all PiCaSO Blocks.
+// @return  Number of instructions pushed.
+//          -ve return value on error.
+int img_mv_selectAll() {
+	img_pushInstruction(img_genMV_SELECT_ALL());   // MV_SELECT_ALL; selecting all blocks
+	return 1;
 }
