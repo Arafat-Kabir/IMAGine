@@ -40,4 +40,11 @@ void img_test();
 IMAGine_Dout img_popData();
 
 
+// IMAGine JIT Assembly instructions
+int img_mv_CLRREG(int reg);
+int img_mv_LOADVEC_ROW(const int reg,
+					   const img_vecval_t *vector,
+					   const int size);
+
+
 #endif  // IMAGINE_DRIVER_H

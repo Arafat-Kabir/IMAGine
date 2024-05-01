@@ -15,7 +15,6 @@ dataFile   = 'ex01_data.npz'
 progHeader = 'out/imagine_prog.h'
 loaderCout = 'out/ex01_loader.c'
 kernelCout = 'out/ex01_kernel.c'
-testCout   = 'out/ex01_testarr.c'
 
 
 # ---- Load weights and biases from external file
@@ -23,18 +22,7 @@ npData = np.load(dataFile)
 A = npData['A']
 B = npData['B']
 V = npData['V']
-expOut = npData['expOut']   # expected output of A@V+B for testing
 print(f'INFO: Weights and biases loaded from {dataFile}')
-
-
-# Export the expected output as C-array (Optional, only needed for testing)
-with open(testCout, 'w') as fexp:
-    ftext = ['int16_t ex01_testarr[] = {\n']
-    for e in expOut:
-        ftext.append(f'  {e},\n')
-    ftext.append('};\n')
-    fexp.writelines(ftext)
-print(f'INFO: Expected outputs C-array written to {testCout}')
 
 
 

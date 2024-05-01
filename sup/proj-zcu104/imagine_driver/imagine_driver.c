@@ -275,7 +275,10 @@ int img_mv_CLRREG(int reg) {
 // @param size   [in]  Length of the vector.
 // @return  Number instructions pushed, including the clearReg() writes.
 //          -ve return value on error.
-int img_mv_LOADVEC_ROW(const int reg, const img_vecval_t *vector, const int size) {
+int img_mv_LOADVEC_ROW(const int reg,
+					   const img_vecval_t *vector,
+					   const int size)
+{
     static const int peCount  = IMAGINE_PEPERBLOCK;      // PE column per BRAM block
     static const int regWidth = IMAGINE_PEREGWIDTH;      // PE register width
     const img_bramaddr_t base = reg*IMAGINE_PEREGWIDTH;  // PE register base address

@@ -53,14 +53,17 @@
 #include "imagine_util.h"
 
 
-#define IMG_VECLEN 80	// IMAGine output vector length
+#define IMG_VECLEN 80	// IMAGine output vector buffer length
 
 
 // References to the IMAGine programs and data
 extern IMAGine_Prog ex01_loader;
 extern IMAGine_Prog ex01_kernel;
-extern int16_t ex01_testarr[];
-extern int ex01_testarr_size;
+extern int16_t ex01_testOut[];
+extern int ex01_testOut_size;
+extern int16_t ex01_testInp[];
+extern int ex01_testInp_size;
+const int regV = 2;		// input register for ex01_kernel
 
 
 void runProg_ex01_loader() {
@@ -99,11 +102,11 @@ void runProg_ex01_kernel() {
 
 	// test the output
 	const char *matched = "false";
-	for(int i=0; i < ex01_testarr_size; ++i) {
-		if(vecOut[i] == ex01_testarr[i]) matched = "true";
+	for(int i=0; i < ex01_testOut_size; ++i) {
+		if(vecOut[i] == ex01_testOut[i]) matched = "true";
 		else matched = "false";
 		xil_printf("index: %2d  data: %-6d  exp: %-6d  matched: %s\n",
-					i, vecOut[i], ex01_testarr[i], matched);
+					i, vecOut[i], ex01_testOut[i], matched);
 
 	}
 	return;
@@ -123,7 +126,7 @@ void runProg_ex01_kernelf() {
 	// check the output
 	const char * matched;
 	for(int i=0; i<outSize; ++i) {
-		float exp = (ex01_testarr[i] * 1.0) / (1<<8);
+		float exp = (ex01_testOut[i] * 1.0) / (1<<8);
 		if(exp == vecOut[i]) matched = "true";
 		else matched = "false";
 		// formatted print
@@ -142,11 +145,20 @@ void runProg_ex01_kernelf() {
 int main()
 {
     init_platform();
+    print("\n\nINFO: Start of new session.\n");
 
     runProg_ex01_loader();
     runProg_ex01_kernel();
-    runProg_ex01_kernelf();
-    
+
+    img_mv_CLRREG(regV);
+    runProg_ex01_kernel();
+
+    int instCount = img_mv_LOADVEC_ROW(regV, ex01_testInp, ex01_testInp_size);
+    xil_printf("INFO: %d instructions pushed by img_mv_LOADVEC_ROW()\n", instCount);
+    runProg_ex01_kernel();
+
+    //runProg_ex01_kernelf();
+
     cleanup_platform();
     return 0;
 }
