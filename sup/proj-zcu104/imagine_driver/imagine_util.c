@@ -82,6 +82,25 @@ int img_fxp2float(float * pfloat,
 }
 
 
+// Given a float array, converts it to fixed-point array.
+// @param [in]  pfxp       Fixed-point output buffer.
+// @param [out] pfloat     Float array input.
+// @param [in]  size       Number of values to convert.
+// @param [in]  fracWidth  No. of fraction bits.
+// @return  Number of data converted.
+int img_float2fxp(img_vecval_t * pfxp,
+				  const float * pfloat,
+				  const int size,
+				  const int fracWidth) {
+	const int scaleFact = 1 << fracWidth;
+	int count = 0;
+	for(; count<size; ++count) {
+		*pfxp++ = (*pfloat++) * scaleFact;
+	}
+	return count;
+}
+
+
 // Prints the floating point representation upto 5 decimal digits.
 // This utility is used because xil_printf() does not support %f.
 // @param val [in]  Floating point value to print
@@ -106,4 +125,21 @@ void img_pollEOVmsg() {
 	while(!img_isEOV()) print(". ");
 	print("Done\n");
 }
+
+
+// Loads a row vector of floats into IMAGine GEMV register.
+// @param reg    [in]  Destination register no.
+// @param vector [in]  Pointer to the row vector to load into
+//                     the register.
+// @param size   [in]  Length of the vector.
+// @return  Number instructions pushed, including the clearReg() writes.
+//          -ve return value on error.
+int img_mv_loadVecf_row(const int reg,
+					    const float *vector,
+					    const int size)
+{
+	int instCount = 0;
+    return instCount;
+}
+
 

@@ -135,7 +135,6 @@ void runProg_ex01_kernelf() {
 		print("  exp: ");
 		img_printFloat(exp);
 		xil_printf("  matched: %s\n", matched);
-
 	}
 	return;
 }
@@ -153,6 +152,23 @@ int main()
     img_mv_CLRREG(regV);
     runProg_ex01_kernel();
 
+    // Test for float2fpx()
+    int convCount;
+    float convFloatVec[IMG_VECLEN];
+    img_vecval_t convFxpVec[IMG_VECLEN];
+
+	convCount = img_fxp2float(convFloatVec, ex01_testInp, ex01_testInp_size, ex01_kernel.fracWidth);
+	xil_printf("INFO: %d data converted from fxp to float\n", convCount);
+
+	convCount = img_float2fxp(convFxpVec, convFloatVec, ex01_testInp_size, ex01_kernel.fracWidth);
+	xil_printf("INFO: %d data converted from float to fxp\n", convCount);
+
+	for(int i=0; i<ex01_testInp_size; ++i) {
+		xil_printf("CHCK: i: %d, match: %d\n", i, ex01_testInp[i]==convFxpVec[i]);
+	}
+
+
+	// Test for img_mv_LOADVEC_ROW()
     int instCount = img_mv_LOADVEC_ROW(regV, ex01_testInp, ex01_testInp_size);
     xil_printf("INFO: %d instructions pushed by img_mv_LOADVEC_ROW()\n", instCount);
     runProg_ex01_kernel();
