@@ -91,3 +91,8 @@ proj-zcu104:  # creates a ZCU-104-based IMAGine project  # <command>
 prog-ex01:   # <command>
 	cp -r ../sup/ex01/ .
 	@echo 'NOTE: Add imagine_assembler to your $$PYTHONPATH environment variable'
+
+
+prog-ex02:   # <command>
+	cp -r ../sup/ex02/ .
+	@echo 'NOTE: Add imagine_assembler to your $$PYTHONPATH environment variable'

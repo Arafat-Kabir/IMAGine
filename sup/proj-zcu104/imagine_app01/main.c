@@ -140,14 +140,7 @@ void runProg_ex01_kernelf() {
 }
 
 
-
-int main()
-{
-    init_platform();
-
-    print("\n\nINFO: Start of new session.\n");
-    img_test();
-
+void ex01_tests() {
     runProg_ex01_loader();
     runProg_ex01_kernel();
 
@@ -173,6 +166,73 @@ int main()
     runProg_ex01_kernel();
 
     //runProg_ex01_kernelf();
+}
+
+
+/** Tests for ex02 **/
+extern IMAGine_Prog ex02_loader;
+extern IMAGine_Prog ex02_kernel;
+extern int16_t ex02_testOut[];
+extern int ex02_testOut_size;
+extern int16_t ex02_testXt[];
+extern int ex02_testXt_size;
+extern int16_t ex02_testHp[];
+extern int ex02_testHp_size;
+const int regXt = 20;		// input register for ex02_kernel
+const int regHp = 21;		// another input register for ex02_kernel
+
+void runProg_ex02_loader() {
+	// Push the instructions
+	xil_printf("INFO: ex02_loader has %d instructions\n", ex02_loader.size);
+	print("INFO: Pushing loader program\n");
+	img_pushProgram(&ex02_loader);
+	xil_printf("INFO: Finished pushing ex02_loader program\n");
+}
+
+
+void runProg_ex02_kernel() {
+	// Push the instructions
+	xil_printf("INFO: ex02_kernel has %d instructions\n", ex02_kernel.size);
+	print("INFO: Pushing ex02-kernel program\n");
+	img_pushProgram(&ex02_kernel);
+	img_pollEOVmsg();	// Wait for EOV interrupt
+
+	// Retrieve output vector and test it agains the expected values
+	print("INFO: Pulling out data from IMAGine FIFO-out\n");
+	img_vecval_t vecOut[IMG_VECLEN];
+	int outSize = img_popVector(vecOut, IMG_VECLEN);
+	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
+
+	// test the output
+	const char *matched = "false";
+	for(int i=0; i < ex02_testOut_size; ++i) {
+		if(vecOut[i] == ex02_testOut[i]) matched = "true";
+		else matched = "false";
+		xil_printf("index: %2d  data: %-6d  exp: %-6d  matched: %s\n",
+					i, vecOut[i], ex02_testOut[i], matched);
+
+	}
+	return;
+}
+
+
+
+void ex02_tests() {
+	runProg_ex02_loader();
+	runProg_ex02_kernel();
+}
+
+
+
+int main()
+{
+    init_platform();
+
+    print("\n\nINFO: Start of new session.\n");
+    img_test();
+
+    //ex01_tests();
+    ex02_tests();
 
     cleanup_platform();
     return 0;
