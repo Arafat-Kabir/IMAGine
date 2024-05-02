@@ -10,6 +10,10 @@
 int img_pushProgram(const IMAGine_Prog *prog);
 int img_popVector(img_vecval_t * const buff, const int size);
 int img_popVectorf(float * const buff, const int size, const int fracWidth);
+int img_loadVectorf_row(const int reg,
+		                const float *vector,
+						const int size,
+						const int fracWidth);
 
 // Datatype conversion utilities
 int img_fxp2float(float * pfloat,

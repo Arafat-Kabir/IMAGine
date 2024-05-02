@@ -4,6 +4,11 @@
 #include "xil_printf.h"
 
 
+// Utility macros, only pass variables, not statements
+#define MIN(a, b)  ((a) < (b) ? (a) : (b))
+#define MAX(a, b)  ((a) > (b) ? (a) : (b))
+
+
 // Given an IMAGine_Prog reference, pushes all instructions
 // into FIFO-in. Returns an error code.
 // @param [in] prog  The program to push into FIFO-in
@@ -129,16 +134,41 @@ void img_pollEOVmsg() {
 
 // Loads a row vector of floats into IMAGine GEMV register.
 // @param reg    [in]  Destination register no.
-// @param vector [in]  Pointer to the row vector to load into
-//                     the register.
+// @param vector [in]  Pointer to the row vector of floats
+//                     to load into the register.
 // @param size   [in]  Length of the vector.
+// @param [in]  fracWidth  No. of fraction bits.
 // @return  Number instructions pushed, including the clearReg() writes.
 //          -ve return value on error.
-int img_mv_loadVecf_row(const int reg,
-					    const float *vector,
-					    const int size)
+int img_loadVectorf_row(const int reg,
+		             const float *vector,
+				     const int size,
+					 const int fracWidth)
 {
-	int instCount = 0;
+    static const int peCount  = IMAGINE_PEPERBLOCK;      // PE column per BRAM block
+    static const int regWidth = IMAGINE_PEREGWIDTH;      // PE register width
+    const img_bramaddr_t base = reg*IMAGINE_PEREGWIDTH;  // PE register base address
+    img_bramrow_t bramImage[IMAGINE_PEREGWIDTH];		 // buffer to hold BRAM image of one register
+    img_vecval_t  fxpSlice[IMAGINE_PEPERBLOCK]; 		 // buffer to hold float2fxp output
+    // Steps:
+    //	 - clear the register
+    //   - go through each set of peCount of the array
+    //   - convert float to fxp
+    //   - get the BRAM image
+    //   - write the BRAM rows of the destination register
+    int bramIndex = 0;
+    int instCount = 0;	// Counter for no. of instructions pushed
+    instCount = img_mv_CLRREG(reg);		// clear the register
+    for(int i=0; i<size; i+=peCount, ++bramIndex) {
+    	int sliceLen = MIN(peCount, size-1);	// MIN() required for the last slice
+    	img_float2fxp(fxpSlice, &vector[i], sliceLen, fracWidth);			// convert float to fxp
+    	int nzCount = img_makePe2BramBlock(bramImage, fxpSlice, sliceLen);  // get BRAM image
+    	if(nzCount < 0) return -1;	// bramImage generation error
+    	if(nzCount > 0) {
+    		instCount +=img_mv_selectCol(bramIndex);    // select the BRAM column
+    		instCount += img_writeBramNZrows(base, bramImage, regWidth);  // write non-zero BRAM rows
+    	}
+    }
     return instCount;
 }
 

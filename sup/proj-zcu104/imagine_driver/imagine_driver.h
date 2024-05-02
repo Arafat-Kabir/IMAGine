@@ -40,7 +40,23 @@ void img_test();
 IMAGine_Dout img_popData();
 
 
+// Low-level datatypes and API functions
+typedef uint16_t  img_bramaddr_t;   // address type of BRAM rows
+typedef uint16_t  img_bramrow_t;	// data type of each row of BRAM
+typedef uint8_t   img_bramid_t;		// data type of BRAM ROW/COL IDs
+
+int img_writeBramNZrows(const img_bramaddr_t base,
+						const img_bramrow_t *bramRows,
+						const int size);
+
+int img_makePe2BramBlock(img_bramrow_t *outArr,
+						 const img_vecval_t *peArr,
+						 int size);
+
+
 // IMAGine JIT Assembly instructions
+int img_mv_selectAll();
+int img_mv_selectCol(img_bramid_t colID);
 int img_mv_CLRREG(int reg);
 int img_mv_LOADVEC_ROW(const int reg,
 					   const img_vecval_t *vector,
