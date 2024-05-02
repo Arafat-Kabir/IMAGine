@@ -36,7 +36,7 @@ typedef struct {
 // IMAGine API functions
 void img_pushInstruction(uint32_t instr);
 bool img_isEOV();
-void img_test();
+int  img_test();
 IMAGine_Dout img_popData();
 
 

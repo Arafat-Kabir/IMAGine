@@ -144,7 +144,9 @@ void runProg_ex01_kernelf() {
 int main()
 {
     init_platform();
+
     print("\n\nINFO: Start of new session.\n");
+    img_test();
 
     runProg_ex01_loader();
     runProg_ex01_kernel();
