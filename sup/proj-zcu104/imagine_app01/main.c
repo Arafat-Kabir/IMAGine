@@ -53,7 +53,7 @@
 #include "imagine_util.h"
 
 
-#define IMG_VECLEN 80	// IMAGine output vector buffer length
+#define VECBUF_SIZE 300	// IMAGine output vector buffer length
 
 
 // References to the IMAGine programs and data
@@ -84,13 +84,13 @@ void runProg_ex01_kernel() {
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
-	img_vecval_t vecOut[IMG_VECLEN];
-	int outSize = img_popVector(vecOut, IMG_VECLEN);
+	img_vecval_t vecOut[VECBUF_SIZE];
+	int outSize = img_popVector(vecOut, VECBUF_SIZE);
 	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
 
 	// convert to floating point values
 	print("INFO: Printing floating point representation\n");
-	float vecOutf[IMG_VECLEN];
+	float vecOutf[VECBUF_SIZE];
 	img_fxp2float(vecOutf, vecOut, outSize, ex01_kernel.fracWidth);
 	for(int i=0; i<outSize; ++i) {
 		xil_printf("fxp: %d  float: ", vecOut[i]);
@@ -119,8 +119,8 @@ void runProg_ex01_kernelf() {
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
-	float vecOut[IMG_VECLEN];
-	int outSize = img_popVectorf(vecOut, IMG_VECLEN, ex01_kernel.fracWidth);
+	float vecOut[VECBUF_SIZE];
+	int outSize = img_popVectorf(vecOut, VECBUF_SIZE, ex01_kernel.fracWidth);
 	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
 
 	// check the output
@@ -149,8 +149,8 @@ void ex01_tests() {
 
     // Test for float2fpx()
     int convCount;
-    float convFloatVec[IMG_VECLEN];
-    //img_vecval_t convFxpVec[IMG_VECLEN];
+    float convFloatVec[VECBUF_SIZE];
+    //img_vecval_t convFxpVec[VECBUF_SIZE];
 
 	convCount = img_fxp2float(convFloatVec, ex01_testInp, ex01_testInp_size, ex01_kernel.fracWidth);
 	xil_printf("INFO: %d data converted from fxp to float\n", convCount);
@@ -172,8 +172,7 @@ void ex01_tests() {
 /** Tests for ex02 **/
 extern IMAGine_Prog ex02_loader;
 extern IMAGine_Prog ex02_kernel;
-extern int16_t ex02_testOut[];
-extern int ex02_testOut_size;
+
 extern int16_t ex02_testXt[];
 extern int ex02_testXt_size;
 extern int16_t ex02_testHp[];
@@ -181,12 +180,43 @@ extern int ex02_testHp_size;
 const int regXt = 20;		// input register for ex02_kernel
 const int regHp = 21;		// another input register for ex02_kernel
 
+extern int16_t ex02_IaFxp[];
+extern int ex02_IaFxp_size;
+
+extern int16_t ex02_FaFxp[];
+extern int ex02_FaFxp_size;
+
+extern int16_t ex02_OaFxp[];
+extern int ex02_OaFxp_size;
+
+extern int16_t ex02_CaFxp[];
+extern int ex02_CaFxp_size;
+
+
+
 void runProg_ex02_loader() {
 	// Push the instructions
 	xil_printf("INFO: ex02_loader has %d instructions\n", ex02_loader.size);
 	print("INFO: Pushing loader program\n");
 	img_pushProgram(&ex02_loader);
 	xil_printf("INFO: Finished pushing ex02_loader program\n");
+}
+
+
+int matchVectors(int16_t *vecTest, int16_t *vecRef, const int size) {
+	const char *matched = "false";
+	int misMatch = 0;
+	for(int i=0; i < size; ++i) {
+		if(vecTest[i] == vecRef[i]) matched = "true";
+		else {
+			matched = "false";
+			++misMatch;
+		}
+		xil_printf("index: %2d  data: %-6d  exp: %-6d  matched: %s\n",
+					i, vecTest[i], vecRef[i], matched);
+
+	}
+	return misMatch;
 }
 
 
@@ -199,20 +229,27 @@ void runProg_ex02_kernel() {
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
-	img_vecval_t vecOut[IMG_VECLEN];
-	int outSize = img_popVector(vecOut, IMG_VECLEN);
+	img_vecval_t vecOut[VECBUF_SIZE];
+	int outSize = img_popVector(vecOut, VECBUF_SIZE);
 	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
+	for(int i=0; i<outSize; ++i) {
+		int d = vecOut[i];
+		xil_printf("    %d: %d\n", i, d);
+	}
 
 	// test the output
-	const char *matched = "false";
-	for(int i=0; i < ex02_testOut_size; ++i) {
-		if(vecOut[i] == ex02_testOut[i]) matched = "true";
-		else matched = "false";
-		xil_printf("index: %2d  data: %-6d  exp: %-6d  matched: %s\n",
-					i, vecOut[i], ex02_testOut[i], matched);
+	int misCount;
+	misCount = matchVectors(vecOut, ex02_IaFxp, ex02_IaFxp_size);
+	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
 
-	}
-	return;
+	misCount = matchVectors(&vecOut[64], ex02_FaFxp, ex02_FaFxp_size);
+	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
+
+	misCount = matchVectors(&vecOut[64*2], ex02_OaFxp, ex02_OaFxp_size);
+	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
+
+	misCount = matchVectors(&vecOut[64*3], ex02_CaFxp, ex02_CaFxp_size);
+	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
 }
 
 

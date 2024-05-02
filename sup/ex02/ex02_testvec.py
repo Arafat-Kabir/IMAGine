@@ -11,6 +11,10 @@ dataFile   = 'ex02_data.npz'
 npData = np.load(dataFile)
 Xtfxp = npData['Xtfxp']
 Hpfxp = npData['Hpfxp']
+Ia_fxp = npData['Ia_fxp']
+Fa_fxp = npData['Fa_fxp']
+Oa_fxp = npData['Oa_fxp']
+C_a_fxp = npData['C_a_fxp']
 expOut = npData['expOut']   # expected output in fixed-point for testing
 
 
@@ -23,15 +27,20 @@ def makeCarray(arr, varName, typeName):
         lines.append(f'  {e},')
     lines.append('};')
     lines.append(f'int {varName}_size = sizeof({varName})/sizeof({varName}[0]);');
+    print(f'INFO: Built C-array for {varName}')
     return '\n'.join(lines)
 
 
 # Export the expected output as C-array
+header = '#include <stdint.h>'
 with open(testCout, 'w') as fexp:
     testXt = makeCarray(Xtfxp, 'ex02_testXt', 'int16_t')
     testHp = makeCarray(Hpfxp, 'ex02_testHp', 'int16_t')
-    testOut = makeCarray(expOut, 'ex02_testOut', 'int16_t')
-    fexp.write('\n\n\n'.join([testXt, testHp, testOut]))
-print(f'INFO: Expected outputs C-array written to {testCout}')
+    Ia = makeCarray(Ia_fxp, 'ex02_IaFxp', 'int16_t')
+    Fa = makeCarray(Fa_fxp, 'ex02_FaFxp', 'int16_t')
+    Oa = makeCarray(Oa_fxp, 'ex02_OaFxp', 'int16_t')
+    Ca = makeCarray(C_a_fxp, 'ex02_CaFxp', 'int16_t')
+    fexp.write('\n\n\n'.join([header, testXt, testHp, Ia, Fa, Oa, Ca]))
+print(f'INFO: Test vectors C-array written to {testCout}')
 
 

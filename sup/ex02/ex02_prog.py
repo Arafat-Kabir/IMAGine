@@ -138,17 +138,33 @@ def computeGate(regDest, regWx, regWh, regb):
   mv_add(rd=regDest, rs1=regDest, rs2=regb)
 
 
-# Compute gate outputs before activation
+# Compute Ia then push it to FIFO out
+vv_serialEn()       # enable serial-shifting for result collection
 computeGate(regIa,  regWxi, regWhi, regbi)
-computeGate(regFa,  regWxf, regWhf, regbf)
-vv_serialEn()               # enable serial-shifting for result collection
-computeGate(regOa,  regWxo, regWho, regbo)
-mv_SYNC(); vv_shiftOff()    # don't capture the following results
-computeGate(regC_a, regWxc, regWhc, regbc)
+mv_SYNC()
+vv_parallelEn()     # this disables serial-shifting
+vv_SYNC()
 
-# Wait until the last MV instruction finishes, then start parallel shifting
+# Compute Fa then push it to FIFO out
+vv_serialEn()       # renable serial-shifting for result collection
+computeGate(regFa,  regWxf, regWhf, regbf)
+mv_SYNC()
+vv_parallelEn()     # this disables serial-shifting
+vv_SYNC()
+
+# Compute Oa then push it to FIFO out
+vv_serialEn()       # renable serial-shifting for result collection
+computeGate(regOa,  regWxo, regWho, regbo)
+mv_SYNC()
+vv_parallelEn()     # this disables serial-shifting
+vv_SYNC()
+
+# Compute C_a then push it to FIFO out
+vv_serialEn()       # renable serial-shifting for result collection
+computeGate(regC_a, regWxc, regWhc, regbc)
 mv_SYNC()
 vv_parallelEn()
+vv_SYNC()
 
 
 # Export the kernel program and the program header
