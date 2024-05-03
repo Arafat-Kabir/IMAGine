@@ -21,15 +21,17 @@ def makeCarray(arr, varName, typeName):
     for e in arr:
         lines.append(f'  {e},')
     lines.append('};')
-    lines.append(f'int {varName}_size = sizeof({varName})/sizeof({varName}[0]);');
+    lines.append(f'int {varName}_size = sizeof({varName})/sizeof({varName}[0]);')
+    print(f'INFO: Built C-array for {varName}')
     return '\n'.join(lines)
 
 
 # Export the expected output as C-array
+header = '#include <stdint.h>'
 with open(testCout, 'w') as fexp:
     testVec = makeCarray(Vfxp, 'ex01_testInp', 'int16_t')
     testOut = makeCarray(expOut, 'ex01_testOut', 'int16_t')
-    fexp.write(f'{testVec}\n\n\n{testOut}')
+    fexp.write('\n\n\n'.join([header, testVec, testOut]))
 print(f'INFO: Expected outputs C-array written to {testCout}')
 
 

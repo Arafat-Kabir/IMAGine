@@ -49,7 +49,11 @@ from copy import deepcopy
 
 # C-program template strings
 c_header_name = 'imagine_prog.h'
-c_header_text = '''#include <stdint.h>
+c_header_text = '''#ifndef IMAGINE_PROG_H
+#define IMAGINE_PROG_H
+
+
+#include <stdint.h>
 
 typedef struct {
     const uint32_t * const instruction;
@@ -62,6 +66,9 @@ typedef struct {
     const int idWidth;
     const int peCount;
 } IMAGine_Prog;
+
+
+#endif  // IMAGINE_PROG_H
 '''
 
 c_prog_template = Template(f'''#include "{c_header_name}"
