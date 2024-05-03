@@ -57,6 +57,8 @@
 // Constant declarations
 #define VECBUF_SIZE  300	// IMAGine output vector buffer length
 #define IMGROW_SIZE  64		// No. of IMAGine rows (also the length of vector shift register)
+#define INPVEC_SIZE  20 	// Length of the input vector (Xt)
+#define HIDENV_SIZE  16		// Size of the LSTM hidden state (Hp)
 const int regXt = 20;		// input register for Xt of ex02_kernel
 const int regHp = 21;		// input register for Hp of ex02_kernel
 
@@ -154,12 +156,12 @@ int test_ex02_kernel() {
 }
 
 
-/*
+
 // Emulates reading from a sensor.
 // Writes the sensor data into the output buffer.
-// Assumes sensor generates floats just for the sake of illustration.
+// Assumes the sensor generates fixed-point numbers compatible with IMAGine.
 // @param data [out]  Buffer to write sensor data into.
-void readSensor(float data[INPVEC_SIZE]) {
+void readSensor(int16_t data[INPVEC_SIZE]) {
 	// Emulate sensor read using random numbers of magnitude |2**11|
 	static const int range = 1 << 12;	// generate 12-bit +ve numbers
 	static const int mean  = 1 << 11;	// set the mean at 2**11
@@ -170,40 +172,80 @@ void readSensor(float data[INPVEC_SIZE]) {
 }
 
 
-// Implements the argmax() function.
-// @param vector [in]  Input vector.
-// @param size   [in]  Input vector length.
-// @return  argmax() value, -ve on error.
-int argmax(const img_vecval_t *vector, const int size) {
-	if(size <= 0) return -1;
-	int maxIndex = 0;
-	for(int i=1; i<size; ++i) {
-		if(vector[i] > vector[maxIndex]) {
-			maxIndex = i;
-		}
-	}
-	return maxIndex;
+// CPU function to perform activation operations
+// of the LSTM cell. (Dummy for illustration)
+// @param Ct [out]  Output Ct, the next cell state.
+// @param Ht [out]  Output Ht, the next hidden state.
+void runActivation(img_vecval_t Ia[HIDENV_SIZE],
+				   img_vecval_t Fa[HIDENV_SIZE],
+				   img_vecval_t Oa[HIDENV_SIZE],
+				   img_vecval_t C_a[HIDENV_SIZE],
+				   img_vecval_t Ct[HIDENV_SIZE],
+				   img_vecval_t Ht[HIDENV_SIZE])
+{
+	// Perform the following operations on CPU
+	//   Operations on CPU,
+	//     It  = sigmoid(Ia)
+	//     Ft  = sigmoid(Fa)
+	//     Ot  = sigmoid(Oa)
+	//     C_t = tanh(C_a)
+	//     Ct  = Ft * Cp + It * C_t
+	//     Ht  = Ot * tanh(Ct)
 }
 
 
-// Given the input vector as floats, runs inference
-// Using the MLP model parameters of ex01 example program.
-// THANKS: Tendayi Kamucheka
-int runInference(float inpVec[INPVEC_SIZE]) {
+// Given the input vector and current hidden-state as fixed-point vectors, 
+// runs one iteration of LSTM cell using IMAGine ex02_kernel.
+// Puts the next hidden-state into the hiddenState vector.
+// @param inpVec      [in]     Input vector from sensor (Xt)
+// @param hiddenState [in/out] Reads the last hidden-state from it,
+//							   Then updated it with the new hidden state.
+// @param cellState   [in/out] Reads the last cell-state from it,
+//							   Then updated it with the new cell state.
+void runLSTMCell(int16_t inpVec[INPVEC_SIZE],
+		         int16_t hiddenState[HIDENV_SIZE],
+				 int16_t cellState[HIDENV_SIZE])
+{
 	// Load input and run the kernel
-	extern IMAGine_Prog ex01_kernel;
-	img_loadVectorf_row(regV, inpVec, INPVEC_SIZE, ex01_kernel.fracWidth);
+	extern IMAGine_Prog ex02_kernel;
+    img_mv_LOADVEC_ROW(regXt, inpVec, INPVEC_SIZE);
+    img_mv_LOADVEC_ROW(regHp, hiddenState, HIDENV_SIZE);
 	img_clearEOV();		// clear eovInterrupt flag before kernel execution
-	img_pushProgram(&ex01_kernel);
-	img_pollEOV();		// Wait for EOV interrupt
+	img_pushProgram(&ex02_kernel);
+	img_pollEOV();	    // Wait for EOV interrupt
 
-	// Get the GEMV output vector and run argmax() to get the class
+	// Get the GEMV output vector and separate them for activation
 	img_vecval_t vecOut[VECBUF_SIZE];
 	img_popVector(vecOut, VECBUF_SIZE);
-	int result = argmax(vecOut, OUTVEC_SIZE);
-	return result;
+	//  Operations on IMAGine,
+	//     Ia  = Wxi @ Xt + Whi @ Hp + bi
+	//     Fa  = Wxf @ Xt + Whf @ Hp + bf
+	//     Oa  = Wxo @ Xt + Who @ Hp + bo
+	//     C_a = Wxc @ Xt + Whc @ Hp + bc
+	img_vecval_t Ia[HIDENV_SIZE];
+	img_vecval_t Fa[HIDENV_SIZE];
+	img_vecval_t Oa[HIDENV_SIZE];
+	img_vecval_t C_a[HIDENV_SIZE];
+	for(int i=0; i<HIDENV_SIZE; ++i) {
+		Ia[i]  = vecOut[IMGROW_SIZE*0 + i];
+		Fa[i]  = vecOut[IMGROW_SIZE*1 + i];
+		Oa[i]  = vecOut[IMGROW_SIZE*2 + i];
+		C_a[i] = vecOut[IMGROW_SIZE*2 + i];
+	}
+	
+	// Apply activation using CPU
+	img_vecval_t Ct[HIDENV_SIZE];
+	img_vecval_t Ht[HIDENV_SIZE];
+	runActivation(Ia, Fa, Oa, C_a, Ct, Ht);
+	
+	// Then copy Ht into hiddenState[];
+	// and copy Ct into cellState[] for the next iteration.
+	for(int i=0; i<HIDENV_SIZE; ++i) {
+		hiddenState[i] = Ht[i];
+		cellState[i]   = Ct[i];
+	}
 }
-*/
+
 
 
 
@@ -222,17 +264,21 @@ int main()
     	return -1;
     }
     
-    /*
+    
     // Free-running application
     print("INFO: Starting free-running application\n");
-    float sensData[INPVEC_SIZE];
+    int16_t sensData[INPVEC_SIZE];
+	img_vecval_t hiddenState[HIDENV_SIZE];
+	img_vecval_t cellState[HIDENV_SIZE];
+	int iterCount = 0;
     while(1) {
     	readSensor(sensData);
-    	int result = runInference(sensData);
-    	// Do something with the inference result
-    	xil_printf("  Result: %d\n", result);
+    	runLSTMCell(sensData, hiddenState, cellState);
+    	// Do something with the hiddenState
+    	xil_printf("  iteration: %d\n", iterCount);
+    	++iterCount;
     }
-	*/
+	
 
     cleanup_platform();
     return 0;
