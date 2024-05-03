@@ -3,19 +3,16 @@ import numpy as np
 
 
 # Script parameters
-testCout   = 'out/ex02_testvec.c'
-dataFile   = 'ex02_data.npz'
+testCout   = 'out/ex03_testvec.c'
+dataFile   = 'ex03_data.npz'
 
 
 # ---- Load weights and biases from external file
 npData = np.load(dataFile)
 Xtfxp = npData['Xtfxp']
 Hpfxp = npData['Hpfxp']
-Ia_fxp = npData['Ia_fxp']
-Fa_fxp = npData['Fa_fxp']
-Oa_fxp = npData['Oa_fxp']
-C_a_fxp = npData['C_a_fxp']
-expOut = npData['expOut']   # expected output in fixed-point for testing
+XHfxp = npData['XHfxp']
+expOut = npData['expOut']   # expected output of A@V+B in fixed-point for testing
 
 
 # Returns a C-array representation string of the given
@@ -34,13 +31,11 @@ def makeCarray(arr, varName, typeName):
 # Export the test vectors as C-arrays
 header = '#include <stdint.h>'
 with open(testCout, 'w') as fexp:
-    testXt = makeCarray(Xtfxp, 'ex02_testXt', 'int16_t')
-    testHp = makeCarray(Hpfxp, 'ex02_testHp', 'int16_t')
-    Ia = makeCarray(Ia_fxp, 'ex02_IaFxp', 'int16_t')
-    Fa = makeCarray(Fa_fxp, 'ex02_FaFxp', 'int16_t')
-    Oa = makeCarray(Oa_fxp, 'ex02_OaFxp', 'int16_t')
-    Ca = makeCarray(C_a_fxp, 'ex02_CaFxp', 'int16_t')
-    fexp.write('\n\n\n'.join([header, testXt, testHp, Ia, Fa, Oa, Ca]))
-print(f'INFO: Test vectors C-array written to {testCout}')
+    testXt = makeCarray(Xtfxp, 'ex03_testXt', 'int16_t')
+    testHp = makeCarray(Hpfxp, 'ex03_testHp', 'int16_t')
+    testXH = makeCarray(Hpfxp, 'ex03_testXH', 'int16_t')
+    testOut = makeCarray(expOut, 'ex03_testOut', 'int16_t')
+    fexp.write('\n\n\n'.join([header, testXt, testHp, testXH, testOut]))
+print(f'INFO: Expected outputs C-array written to {testCout}')
 
 

@@ -96,3 +96,8 @@ prog-ex01:   # <command>
 prog-ex02:   # <command>
 	cp -r ../sup/ex02/ .
 	@echo 'NOTE: Add imagine_assembler to your $$PYTHONPATH environment variable'
+
+
+prog-ex03:   # <command>
+	cp -r ../sup/ex03/ .
+	@echo 'NOTE: Add imagine_assembler to your $$PYTHONPATH environment variable'

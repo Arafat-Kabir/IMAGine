@@ -224,15 +224,9 @@ void runProg_ex02_kernel() {
 	// Push the instructions
 	xil_printf("INFO: ex02_kernel has %d instructions\n", ex02_kernel.size);
 	print("INFO: Pushing ex02-kernel program\n");
+	img_clearEOV();		// clear EOV interrupt before pushing new program
 	img_pushProgram(&ex02_kernel);
 	img_pollEOVmsg();	// Wait for EOV interrupt
-
-	// clearEOV()
-	xil_printf("  EOV Flag: %d\n", img_isEOV());
-	xil_printf("  EOV Flag: %d\n", img_isEOV());
-	img_clearEOV();
-	xil_printf("  EOV Flag: %d\n", img_isEOV());
-	xil_printf("  EOV Flag: %d\n", img_isEOV());
 
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
@@ -265,6 +259,62 @@ void ex02_tests() {
 
 
 
+/** Tests for ex03 **/
+extern IMAGine_Prog ex03_loader;
+extern IMAGine_Prog ex03_kernel;
+
+extern int16_t ex03_testXt[];
+extern int ex03_testXt_size;
+extern int16_t ex03_testHp[];
+extern int ex03_testHp_size;
+extern int16_t ex03_testXH[];
+extern int ex03_testXH_size;
+const int regXH = 2;		// input register for ex03_kernel
+
+extern int16_t ex03_testOut[];
+extern int ex03_testOut_size;
+
+
+
+void runProg_ex03_loader() {
+	// Push the instructions
+	xil_printf("INFO: ex03_loader has %d instructions\n", ex03_loader.size);
+	print("INFO: Pushing loader program\n");
+	img_pushProgram(&ex03_loader);
+	xil_printf("INFO: Finished pushing ex03_loader program\n");
+}
+
+
+void runProg_ex03_kernel() {
+	// Push the instructions
+	xil_printf("INFO: ex03_kernel has %d instructions\n", ex03_kernel.size);
+	print("INFO: Pushing ex03-kernel program\n");
+	img_clearEOV();		// clear EOV interrupt before pushing new program
+	img_pushProgram(&ex03_kernel);
+	img_pollEOVmsg();	// Wait for EOV interrupt
+
+	// Retrieve output vector and test it agains the expected values
+	print("INFO: Pulling out data from IMAGine FIFO-out\n");
+	img_vecval_t vecOut[VECBUF_SIZE];
+	int outSize = img_popVector(vecOut, VECBUF_SIZE);
+	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
+
+	// test the output
+	int misCount;
+	misCount = matchVectors(vecOut, ex03_testOut, ex03_testOut_size);
+	xil_printf("NOTE: %d mismatches for ex03_testOut\n", misCount);
+}
+
+
+
+void ex03_tests() {
+	runProg_ex03_loader();
+	runProg_ex03_kernel();
+	for(int i=0; i<5; ++i) runProg_ex03_kernel();
+}
+
+
+
 int main()
 {
     init_platform();
@@ -273,7 +323,8 @@ int main()
     img_test();
 
     //ex01_tests();
-    ex02_tests();
+    //ex02_tests();
+    ex03_tests();
 
     cleanup_platform();
     return 0;
