@@ -82,13 +82,32 @@ kernelCout = 'out/ex03_kernel.c'
 
 # ---- Load weights and biases from external file
 npData = np.load(dataFile)
-W  = npData['W']
-bb = npData['bb']
+Wxi = npData['Wxi']
+Wxf = npData['Wxf']
+Wxo = npData['Wxo']
+Wxc = npData['Wxc']
+Whi = npData['Whi']
+Whf = npData['Whf']
+Who = npData['Who']
+Whc = npData['Whc']
+
+bi = npData['bi']
+bf = npData['bf']
+bo = npData['bo']
+bc = npData['bc']
 
 # load inputs (this is only for testing)
-XH = npData['XH']
+Xt = npData['Xt']
+Hp = npData['Hp']
 print(f'INFO: Weights and biases loaded from {dataFile}')
 
+# Concatenate weights, biases, and inputs
+Wx = np.concatenate((Wxi, Wxf, Wxo, Wxc), axis=0)   # stack rows
+Wh = np.concatenate((Whi, Whf, Who, Whc), axis=0)   # stack rows
+W  = np.concatenate((Wx, Wh), axis=1)               # append columns
+bb = np.concatenate((bi, bf, bo, bc), axis=0)  # append elements
+XH = np.concatenate((Xt, Hp), axis=0)          # append elements
+print(f'INFO: Weights and biases concatenated')
 
 
 

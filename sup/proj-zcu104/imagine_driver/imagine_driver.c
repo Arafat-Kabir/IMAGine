@@ -225,14 +225,15 @@ IMAGine_Dout img_popData() {
 int img_test() {
 	// This test reads the 64-bit magic number from reg14, reg15.
 	// When printed as ASCII string, this should say "IMAGine".
+	print("INFO: Running Magic Number test.\n");
 	uint32_t magic[3] = {0};	  // space for one extra character for null-termination
 	magic[0] = readImgReg(REG14);
 	magic[1] = readImgReg(REG15);
 
 	// Print the magic numbers
-	xil_printf("REG14 : %08X\n", magic[0]);
-	xil_printf("REG15 : %08X\n", magic[1]);
-	xil_printf("String: %s\n", (char*)magic);
+	xil_printf("  REG14 : %08X\n", magic[0]);
+	xil_printf("  REG15 : %08X\n", magic[1]);
+	xil_printf("  String: %s\n", (char*)magic);
 
 	// Automatic checks
 	if(magic[0]==0x47414D49 && magic[1]==0x00656E69) {
