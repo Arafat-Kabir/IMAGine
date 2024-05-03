@@ -51,10 +51,13 @@
 #include "imagine_driver.h"
 #include "imagine_util.h"
 #include "imagine_prog.h"
+#include <stdlib.h>
 
 
 // Constant declarations
 #define VECBUF_SIZE  300	// IMAGine output vector buffer length
+#define INPVEC_SIZE  32		// Length of the input vector to the model
+#define OUTVEC_SIZE  16		// Length of the output vector from the model
 const int regV=2;			// Input register for the ex01_kernel
 
 
@@ -121,11 +124,63 @@ int test_ex01_kernel() {
 }
 
 
+// Emulates reading from a sensor.
+// Writes the sensor data into the output buffer.
+// Assumes sensor generates floats just for the sake of illustration.
+// @param data [out]  Buffer to write sensor data into.
+void readSensor(float data[INPVEC_SIZE]) {
+	// Emulate sensor read using random numbers of magnitude |2**11|
+	static const int range = 1 << 12;	// generate 12-bit +ve numbers
+	static const int mean  = 1 << 11;	// set the mean at 2**11
+	static const float scale = 100.0;	// to scale down integer to float
+	for(int i=0; i<INPVEC_SIZE; ++i){
+		data[i] = (rand() % range - mean) / scale;
+	}
+}
+
+
+// Implements the argmax() function.
+// @param vector [in]  Input vector.
+// @param size   [in]  Input vector length.
+// @return  argmax() value, -ve on error.
+int argmax(const img_vecval_t *vector, const int size) {
+	if(size <= 0) return -1;
+	int maxIndex = 0;
+	for(int i=1; i<size; ++i) {
+		if(vector[i] > vector[maxIndex]) {
+			maxIndex = i;
+		}
+	}
+	return maxIndex;
+}
+
+
+// Given the input vector as floats, runs inference
+// Using the MLP model parameters of ex01 example program.
+// THANKS: Tendayi Kamucheka
+int runInference(float inpVec[INPVEC_SIZE]) {
+	// Load input and run the kernel
+	extern IMAGine_Prog ex01_kernel;
+	img_loadVectorf_row(regV, inpVec, INPVEC_SIZE, ex01_kernel.fracWidth);
+	img_clearEOV();		// clear eovInterrupt flag before kernel execution
+	img_pushProgram(&ex01_kernel);
+	img_pollEOV();		// Wait for EOV interrupt
+
+	// Get the GEMV output vector and run argmax() to get the class
+	img_vecval_t vecOut[VECBUF_SIZE];
+	img_popVector(vecOut, VECBUF_SIZE);
+	int result = argmax(vecOut, OUTVEC_SIZE);
+	return result;
+}
+
+
+
 int main()
 {
     init_platform();
     print("\n\nINFO: Start of new session.\n");
 
+    
     // Perform initialization and tests
     img_test();			// Tests if IMAGine is set up correctly
     load_ex01_params();	// Load the model parameter
@@ -136,6 +191,14 @@ int main()
     }
 
     // Free-running application
+    print("INFO: Starting free-running application\n");
+    float sensData[INPVEC_SIZE];
+    while(1) {
+    	readSensor(sensData);
+    	int result = runInference(sensData);
+    	// Do something with the inference result
+    	xil_printf("  Result: %d\n", result);
+    }
 
 
     cleanup_platform();
