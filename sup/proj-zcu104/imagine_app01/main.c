@@ -227,15 +227,18 @@ void runProg_ex02_kernel() {
 	img_pushProgram(&ex02_kernel);
 	img_pollEOVmsg();	// Wait for EOV interrupt
 
+	// clearEOV()
+	xil_printf("  EOV Flag: %d\n", img_isEOV());
+	xil_printf("  EOV Flag: %d\n", img_isEOV());
+	img_clearEOV();
+	xil_printf("  EOV Flag: %d\n", img_isEOV());
+	xil_printf("  EOV Flag: %d\n", img_isEOV());
+
 	// Retrieve output vector and test it agains the expected values
 	print("INFO: Pulling out data from IMAGine FIFO-out\n");
 	img_vecval_t vecOut[VECBUF_SIZE];
 	int outSize = img_popVector(vecOut, VECBUF_SIZE);
 	xil_printf("INFO: %d data popped from IMAGine\n", outSize);
-	for(int i=0; i<outSize; ++i) {
-		int d = vecOut[i];
-		xil_printf("    %d: %d\n", i, d);
-	}
 
 	// test the output
 	int misCount;
@@ -243,13 +246,13 @@ void runProg_ex02_kernel() {
 	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
 
 	misCount = matchVectors(&vecOut[64], ex02_FaFxp, ex02_FaFxp_size);
-	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
+	xil_printf("NOTE: %d mismatches for ex02_FaFxp\n", misCount);
 
 	misCount = matchVectors(&vecOut[64*2], ex02_OaFxp, ex02_OaFxp_size);
-	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
+	xil_printf("NOTE: %d mismatches for ex02_OaFxp\n", misCount);
 
 	misCount = matchVectors(&vecOut[64*3], ex02_CaFxp, ex02_CaFxp_size);
-	xil_printf("NOTE: %d mismatches for ex02_IaFxp\n", misCount);
+	xil_printf("NOTE: %d mismatches for ex02_CaFxp\n", misCount);
 }
 
 
@@ -257,6 +260,7 @@ void runProg_ex02_kernel() {
 void ex02_tests() {
 	runProg_ex02_loader();
 	runProg_ex02_kernel();
+	for(int i=0; i<5; ++i) runProg_ex02_kernel();
 }
 
 

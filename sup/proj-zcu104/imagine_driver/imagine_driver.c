@@ -165,6 +165,15 @@ bool img_isEovSet() {
 }
 
 
+// Clears the eovInterrupt flag
+static inline
+void img_clearEovFlag() {
+	uint32_t ctrl = readImgReg(REG2);	    	// read current register content
+	writeImgReg(REG2, ctrl | BIT_IMG_CLREOV);	// set the pulse-gen bit
+	writeImgReg(REG2, ctrl & ~BIT_IMG_CLREOV);	// clear the pulse-gen bit
+}
+
+
 
 
 // ---- User APIs
@@ -182,6 +191,12 @@ void img_pushInstruction(uint32_t instr) {
 // Returns true if IMAGine eovInterrupt is set (Alias to img_EovSet())
 bool img_isEOV() {
 	return img_isEovSet();
+}
+
+
+// Clears the eovInterrupt flag
+void img_clearEOV() {
+	img_clearEovFlag();
 }
 
 
