@@ -230,7 +230,7 @@ void runLSTMCell(int16_t inpVec[INPVEC_SIZE],
 		Ia[i]  = vecOut[IMGROW_SIZE*0 + i];
 		Fa[i]  = vecOut[IMGROW_SIZE*1 + i];
 		Oa[i]  = vecOut[IMGROW_SIZE*2 + i];
-		C_a[i] = vecOut[IMGROW_SIZE*2 + i];
+		C_a[i] = vecOut[IMGROW_SIZE*3 + i];
 	}
 	
 	// Apply activation using CPU

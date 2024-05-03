@@ -98,15 +98,21 @@ int matchVectors(int16_t *vecTest, int16_t *vecRef, const int size) {
 // The output vector with the expected result vector.
 // Returns the total mismatch count.
 int test_ex03_kernel() {
-	// Load the test input vector
-	//extern int16_t ex03_testXt[]; extern int ex03_testXt_size;
-	//extern int16_t ex03_testHp[]; extern int ex03_testHp_size;
-	extern int16_t ex03_testXH[]; extern int ex03_testXH_size;
-	print("INFO: Loading the test input vector XH\n");
+	// Build the test vector by concatenating Xt, Hp: XH = [Xt, Hp]
+	extern int16_t ex03_testXt[];
+	extern int16_t ex03_testHp[];
+	int16_t catXH[INPVEC_SIZE + HIDENV_SIZE];
+	const int catXH_size = INPVEC_SIZE + HIDENV_SIZE;
 
+	for(int i=0; i<INPVEC_SIZE; ++i) catXH[i] = ex03_testXt[i];
+	for(int i=0; i<HIDENV_SIZE; ++i) catXH[INPVEC_SIZE + i] = ex03_testHp[i];
+	print("INFO: Loading the test input vector catXH\n");
+
+
+	// Load the test input vectors
 	int instCount;
-    //instCount = img_mv_LOADVEC_ROW(regXH, ex03_testXH, ex03_testXH_size);
-    //xil_printf("INFO: %d instructions pushed by img_mv_LOADVEC_ROW() for XH\n", instCount);
+    instCount = img_mv_LOADVEC_ROW(regXH, catXH, catXH_size);
+    xil_printf("INFO: %d instructions pushed by img_mv_LOADVEC_ROW() for catXH\n", instCount);
 
 
 	// Push the compute kernel
@@ -135,7 +141,6 @@ int test_ex03_kernel() {
 }
 
 
-/*
 // Emulates reading from a sensor.
 // Writes the sensor data into the output buffer.
 // Assumes the sensor generates fixed-point numbers compatible with IMAGine.
@@ -185,31 +190,43 @@ void runLSTMCell(int16_t inpVec[INPVEC_SIZE],
 		         int16_t hiddenState[HIDENV_SIZE],
 				 int16_t cellState[HIDENV_SIZE])
 {
+	// Concatenate input and hidden-state into a single vector
+	int16_t catXH[INPVEC_SIZE + HIDENV_SIZE];
+	const int catXH_size = INPVEC_SIZE + HIDENV_SIZE;
+	for(int i=0; i<INPVEC_SIZE; ++i) catXH[i] = inpVec[i];
+	for(int i=0; i<HIDENV_SIZE; ++i) catXH[INPVEC_SIZE + i] = hiddenState[i];
+
 	// Load input and run the kernel
-	extern IMAGine_Prog ex02_kernel;
-    img_mv_LOADVEC_ROW(regXt, inpVec, INPVEC_SIZE);
-    img_mv_LOADVEC_ROW(regHp, hiddenState, HIDENV_SIZE);
+	extern IMAGine_Prog ex03_kernel;
+    img_mv_LOADVEC_ROW(regXH, catXH, catXH_size);
 	img_clearEOV();		// clear eovInterrupt flag before kernel execution
-	img_pushProgram(&ex02_kernel);
+	img_pushProgram(&ex03_kernel);
 	img_pollEOV();	    // Wait for EOV interrupt
 
 	// Get the GEMV output vector and separate them for activation
 	img_vecval_t vecOut[VECBUF_SIZE];
 	img_popVector(vecOut, VECBUF_SIZE);
+
 	//  Operations on IMAGine,
 	//     Ia  = Wxi @ Xt + Whi @ Hp + bi
 	//     Fa  = Wxf @ Xt + Whf @ Hp + bf
 	//     Oa  = Wxo @ Xt + Who @ Hp + bo
 	//     C_a = Wxc @ Xt + Whc @ Hp + bc
+	//
+	//     Ra  = | Ia  |
+	//           | Fa  |
+	//           | Oa  |
+	//           | C_a |
+
 	img_vecval_t Ia[HIDENV_SIZE];
 	img_vecval_t Fa[HIDENV_SIZE];
 	img_vecval_t Oa[HIDENV_SIZE];
 	img_vecval_t C_a[HIDENV_SIZE];
-	for(int i=0; i<HIDENV_SIZE; ++i) {
-		Ia[i]  = vecOut[IMGROW_SIZE*0 + i];
-		Fa[i]  = vecOut[IMGROW_SIZE*1 + i];
-		Oa[i]  = vecOut[IMGROW_SIZE*2 + i];
-		C_a[i] = vecOut[IMGROW_SIZE*2 + i];
+	for(int i=0; i<IMGROW_SIZE; ++i) {
+		Ia[i]  = vecOut[HIDENV_SIZE*0 + i];
+		Fa[i]  = vecOut[HIDENV_SIZE*1 + i];
+		Oa[i]  = vecOut[HIDENV_SIZE*2 + i];
+		C_a[i] = vecOut[HIDENV_SIZE*3 + i];
 	}
 	
 	// Apply activation using CPU
@@ -224,7 +241,7 @@ void runLSTMCell(int16_t inpVec[INPVEC_SIZE],
 		cellState[i]   = Ct[i];
 	}
 }
-*/
+
 
 
 
@@ -243,7 +260,7 @@ int main()
     	return -1;
     }
     
-    /*
+
     // Free-running application
     print("INFO: Starting free-running application\n");
     int16_t sensData[INPVEC_SIZE];
@@ -257,7 +274,6 @@ int main()
     	xil_printf("  iteration: %d\n", iterCount);
     	++iterCount;
     }
-    */
 	
 
     cleanup_platform();
