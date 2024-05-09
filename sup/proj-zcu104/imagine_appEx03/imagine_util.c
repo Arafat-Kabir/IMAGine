@@ -160,7 +160,7 @@ int img_loadVectorf_row(const int reg,
     int instCount = 0;	// Counter for no. of instructions pushed
     instCount = img_mv_CLRREG(reg);		// clear the register
     for(int i=0; i<size; i+=peCount, ++bramIndex) {
-    	int sliceLen = MIN(peCount, size-1);	// MIN() required for the last slice
+      int sliceLen = MIN(peCount, size-i);	// MIN() required for the last slice
     	img_float2fxp(fxpSlice, &vector[i], sliceLen, fracWidth);			// convert float to fxp
     	int nzCount = img_makePe2BramBlock(bramImage, fxpSlice, sliceLen);  // get BRAM image
     	if(nzCount < 0) return -1;	// bramImage generation error

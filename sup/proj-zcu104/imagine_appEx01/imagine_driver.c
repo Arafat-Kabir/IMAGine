@@ -313,7 +313,7 @@ int img_mv_LOADVEC_ROW(const int reg,
     int instCount = 0;	// No. of instructions pushed
     instCount = img_mv_CLRREG(reg);		// clear the register
     for(int i=0; i<size; i+=peCount, ++bramIndex) {
-    	int sliceLen = MIN(peCount, size-1);	// MIN() required for the last slice
+      int sliceLen = MIN(peCount, size-i);	// MIN() required for the last slice
     	int nzCount = img_makePe2BramBlock(bramImage, &vector[i], sliceLen);  // get BRAM image
     	if(nzCount < 0) return -1;	// bramImage generation error
     	if(nzCount > 0) {
