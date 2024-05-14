@@ -18,7 +18,7 @@ list:
 
 IMAGine-ISA.pdf: IMAGine-ISA.tex
 	pdflatex IMAGine-ISA
-	bibtex IMAGine-ISA
+	# bibtex IMAGine-ISA
 	pdflatex IMAGine-ISA
 	pdflatex IMAGine-ISA
 	$(pdfview) IMAGine-ISA.pdf &
