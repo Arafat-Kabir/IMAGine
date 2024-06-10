@@ -1,0 +1,20 @@
+total 36K
+lrwxrwxrwx 1 makabir makabir   58 Apr 29 19:16 ex01_kernel.c -> ../../../../../sup/proj-zcu104/imagine_app01/ex01_kernel.c
+lrwxrwxrwx 1 makabir makabir   58 Apr 29 19:16 ex01_loader.c -> ../../../../../sup/proj-zcu104/imagine_app01/ex01_loader.c
+lrwxrwxrwx 1 makabir makabir   59 May  1 16:38 ex01_testvec.c -> ../../../../../sup/proj-zcu104/imagine_app01/ex01_testvec.c
+lrwxrwxrwx 1 makabir makabir   34 May  2 16:46 ex02_kernel.c -> ../../../../ex02/out/ex02_kernel.c
+lrwxrwxrwx 1 makabir makabir   34 May  2 16:46 ex02_loader.c -> ../../../../ex02/out/ex02_loader.c
+lrwxrwxrwx 1 makabir makabir   35 May  2 16:46 ex02_testvec.c -> ../../../../ex02/out/ex02_testvec.c
+lrwxrwxrwx 1 makabir makabir   34 May  3 12:55 ex03_kernel.c -> ../../../../ex03/out/ex03_kernel.c
+lrwxrwxrwx 1 makabir makabir   34 May  3 12:55 ex03_loader.c -> ../../../../ex03/out/ex03_loader.c
+lrwxrwxrwx 1 makabir makabir   35 May  3 12:55 ex03_testvec.c -> ../../../../ex03/out/ex03_testvec.c
+lrwxrwxrwx 1 makabir makabir   62 Apr 29 19:02 imagine_driver.c -> ../../../../../sup/proj-zcu104/imagine_driver/imagine_driver.c
+lrwxrwxrwx 1 makabir makabir   62 Apr 29 19:02 imagine_driver.h -> ../../../../../sup/proj-zcu104/imagine_driver/imagine_driver.h
+lrwxrwxrwx 1 makabir makabir   59 Apr 29 19:16 imagine_prog.h -> ../../../../../sup/proj-zcu104/imagine_app01/imagine_prog.h
+lrwxrwxrwx 1 makabir makabir   60 Apr 30 14:21 imagine_util.c -> ../../../../../sup/proj-zcu104/imagine_driver/imagine_util.c
+lrwxrwxrwx 1 makabir makabir   60 Apr 30 14:21 imagine_util.h -> ../../../../../sup/proj-zcu104/imagine_driver/imagine_util.h
+-rw-rw-r-- 1 makabir makabir 6.4K Apr 29 18:57 lscript.ld
+lrwxrwxrwx 1 makabir makabir   51 Apr 29 19:17 main.c -> ../../../../../sup/proj-zcu104/imagine_app01/main.c
+-rw-r--r-- 1 makabir makabir 3.3K Apr 29 18:57 platform.c
+-rw-rw-r-- 1 makabir makabir  118 Apr 29 18:57 platform_config.h
+-rw-r--r-- 1 makabir makabir 1.8K Apr 29 18:57 platform.h

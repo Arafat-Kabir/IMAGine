@@ -1,0 +1,9 @@
+# Assembler parameters for IMAGine 64x64 
+mvBlockDim : [64, 4]    # IMAGine dimensions.
+regWidth   : 16         # 16-bit PE registers.
+fracWidth  : 8          # Lower 8-bits are fractional part of fixed-point representation.
+regCnt     : 60         # Registers 0-59 are user regs.
+resvRegCnt : 4          # Registers 60-63 are reserved for assembler use.
+maxLevel   : 1          # Array-level accumulation max levels, 1 level is sufficient for 64 PE columns (4 PE block columns).
+maxFold    : 4          # Block-level accumulation max fold, 4 levels are required for 16 PE columns in a block.
+idWidth    : 8          # ID-width of PE blocks
