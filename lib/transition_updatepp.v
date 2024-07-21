@@ -1,0 +1,233 @@
+/*********************************************************************************
+* Copyright (c) 2023, Computer Systems Design Lab, University of Arkansas        *
+*                                                                                *
+* All rights reserved.                                                           *
+*                                                                                *
+* Permission is hereby granted, free of charge, to any person obtaining a copy   *
+* of this software and associated documentation files (the "Software"), to deal  *
+* in the Software without restriction, including without limitation the rights   *
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell      *
+* copies of the Software, and to permit persons to whom the Software is          *
+* furnished to do so, subject to the following conditions:                       *
+*                                                                                *
+* The above copyright notice and this permission notice shall be included in all *
+* copies or substantial portions of the Software.                                *
+*                                                                                *
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR     *
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,       *
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE    *
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER         *
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  *
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  *
+* SOFTWARE.                                                                      *
+**********************************************************************************
+
+==================================================================================
+
+  Author : MD Arafat Kabir
+  Email  : arafat.sun@gmail.com
+  Date   : Tue, Aug 29, 05:14 PM CST 2023
+  Version: v1.0
+
+  Description:
+  This module describes the transition table for UPDATEPP instruction. It is
+  a purely combinatorial module.
+
+  The transition table describes the following FSM. Checkout the transition
+  table comments with the code for details of what each state does.
+
+
+                     .----------.                 .---------------.   .--------------.
+       .------.      | aluRst   |   .---------.   | opmxLoadParam |   | aluLoadParam |
+  ---->| INIT |----->| opmxAopB |-->| bRead_0 |-->| bRead         |-->| bRead        |
+       '------'      | multRead |   '---------'   '---------------'   '--------------'
+           ^         '----------'                                             |
+           |                                                                  v
+           |                                                              .-------.
+           |                   .---------.   .---------.   .---------.    | aluEn |
+           |                   | bRead_1 |-->| bRead_1 |-->| bRead_1 |--->| bRead |
+           |                   '---------'   '---------'   '---------'    '-------'
+           |                        ^                                         |
+           |                        | !count1_done                            |
+           |                        |                                         |
+           |   .----------.    .--------.                                     v
+           |   | aluDis   |    | aluDis |    .--------.    .--------.    .--------.
+           '---| bWrite_1 |<---| bWrite |<---| bWrite |<---| bWrite |<---| bWrite |
+               '----------'  . '--------'    '--------'    '--------'    '--------'
+                             |
+                          count1_done
+
+================================================================================*/
+`timescale 1ns/100ps
+`include "ak_macros.v"
+
+
+
+module transition_updatepp #(
+  parameter DEBUG = 1,
+  parameter STATE_CODE_WIDTH = -1,
+  parameter COUNT0_VAL_WIDTH = -1
+) (
+  cur_state,      // current state input
+  next_state,     // next state output
+  algo_done,      // signals that this is the last state, next state will be INIT
+
+  count0_val,      // value to load into counter
+  count0_load,     // enable signal to load
+  count0_en,       // enable counting
+  count0_done,     // counter expired
+
+  count1_valSelect, // selects counter1 load value
+  count1_load,      // enable signal to load
+  count1_en,        // enable counting
+  count1_done       // counter expired
+);
+
+  `include "picaso_algorithm_decoder.inc.v"
+  `include "picaso_algorithm_fsm.inc.v"
+
+  `AK_ASSERT(STATE_CODE_WIDTH == PICASO_ALGO_CODE_WIDTH)
+  //`AK_TOP_WARN("Add state diagram for transition_updatepp AFTER testing")    // simulation-time warning (uncomment this if implementation is changed)
+
+  localparam [STATE_CODE_WIDTH-1:0] INIT_STATE = PICASO_ALGO_NOP;   // all state-machines starts at PICASO_ALGO_NOP state
+
+
+  // IO Ports
+  input      [STATE_CODE_WIDTH-1:0] cur_state;
+  output reg [STATE_CODE_WIDTH-1:0] next_state;
+  output reg                        algo_done;
+
+  output reg [COUNT0_VAL_WIDTH-1:0]  count0_val;
+  output reg                         count0_load;
+  output reg                         count0_en;
+  input                              count0_done;
+
+  output reg [ALGORITHM_CTR1_SEL_WIDTH-1:0] count1_valSelect;
+  output reg                                count1_load;
+  output reg                                count1_en;
+  input                                     count1_done;
+
+
+  // -- Task to set default values for the output ports to values equivalent of NOP
+  localparam COMMON_CNT0_VAL = 2;     // it is a common value for counter0
+  task all_nop;
+    begin
+      algo_done = 0;        // NOP
+      count0_load = 0;      // NOP
+      count0_en = 0;        // NOP
+      count1_load = 0;      // NOP
+      count1_en = 0;        // NOP
+      count1_valSelect = 0;
+      count0_val = COMMON_CNT0_VAL;  // overlap with common cases reduces logic utilization
+    end
+  endtask
+
+
+
+  // state transition table:
+  //   - It computes the next state based on current state and counter states.
+  //   - It also generates the counter control signals
+  always@* begin
+    all_nop;     // start with NOP 
+    (* full_case, parallel_case *)
+    case(cur_state)
+      INIT_STATE: begin
+        // Load the counter1 to (precision >> 4) for iterations
+        // Move to a state that
+        //   - resets alu
+        //   - puts the opmux in A_op_0 configuration 
+        //   - reads multiplier bits from the BRAM
+        count1_valSelect = ALGORITHM_CTR1_SEL_2SHR;
+        count1_load = 1'b1;
+        next_state  = PICASO_ALGO_aluRst_opmxAopB_multRead;
+      end
+
+      PICASO_ALGO_aluRst_opmxAopB_multRead: begin
+        // Move to a state that
+        //   - Reads the partial-product and multiplicand bits, and increments their pointers
+        next_state = PICASO_ALGO_bRead_0;
+      end
+
+      PICASO_ALGO_bRead_0: begin
+        // Move to a state that
+        //   - loads opmux configuration from instruction field
+        //   - Reads the partial-product and multiplicand bits, and increments their pointers
+        next_state = PICASO_ALGO_opmxLoadParam_bRead;
+      end
+
+      PICASO_ALGO_opmxLoadParam_bRead: begin
+        // Move to a state that
+        //   - loads alu config decoded from instruction field
+        //     - should use multiplier bits and booth's encoding
+        //   - Reads the partial-product and multiplicand bits, and increments their pointers
+        next_state = PICASO_ALGO_aluLoadParam_bRead;
+      end
+
+      PICASO_ALGO_aluLoadParam_bRead: begin
+        // Move to a state that
+        //   - enables ALU for computation
+        //   - Reads the partial-product and multiplicand bits, and increments their pointers
+        next_state = PICASO_ALGO_aluEn_bRead;
+      end
+
+      PICASO_ALGO_aluEn_bRead: begin
+        // Decrement the iteration coutner (counter1), doing so here makes it possible to use val0 as the counter-done signal.
+        // Set counter0 to 2, to stay in the next state for 3 cycles.
+        // Move to a state that
+        //   - keeps ALU enabled
+        //   - writes the ALU output to BRAM and increments the write pointer
+        count1_en = 1'b1;
+        count0_val = 2;
+        count0_load = 1'b1;
+        next_state = PICASO_ALGO_bWrite;
+      end
+
+      PICASO_ALGO_bWrite: begin
+        // Stay in this state until counter0 expires.
+        // Then, move to a state that
+        //   - writes to BRAM and increments pointer
+        //   - disables ALU
+        count0_en = 1;
+        if(!count0_done) next_state = PICASO_ALGO_bWrite;
+        else             next_state = PICASO_ALGO_aluDis_bWrite;
+      end
+
+      PICASO_ALGO_aluDis_bWrite: begin
+        // Check if counter1 expired. 
+        // if no:
+        //   - set counter0 to 2, to stay in the next state for 3 cycles
+        //   - go to a state that reads from BRAM and increments the pointer
+        // if yes: 
+        //   - Move to a state that writes the last bit again (sign extension) 
+        if(!count1_done) begin
+          count0_val = 2;
+          count0_load = 1;
+          next_state = PICASO_ALGO_bRead_1;
+        end else begin
+          next_state = PICASO_ALGO_aluDis_bWrite_1;
+        end
+      end
+
+      PICASO_ALGO_bRead_1: begin
+        // Stay in this state until counter0 expires.
+        // Move to a state that
+        //   - enables ALU for computation
+        //   - Reads the partial-product and multiplicand bits, and increments their pointers
+        count0_en = 1;
+        if(!count0_done) next_state = PICASO_ALGO_bRead_1;
+        else             next_state = PICASO_ALGO_aluEn_bRead;
+      end
+
+      PICASO_ALGO_aluDis_bWrite_1: begin
+        // Assert the done signal
+        // Go back to initial state
+        algo_done = 1;
+        next_state = INIT_STATE;
+      end
+
+      default: next_state = INIT_STATE;    // NOP and go back to initial state
+    endcase
+  end
+
+
+endmodule
