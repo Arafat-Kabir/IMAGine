@@ -47,3 +47,8 @@ Package organization,
 │   └── proj-zcu104: Files to set up ZCU-104 projects
 └── work: Work area with setup commands (Makefile)
 ```
+
+## Tutorials
+1. [Setting up the Vivado Project](http://turing.uark.edu/~makabir/files/shared/imagine/tut01-vivado-proj.mp4)
+2. [Writing the Vitis application](http://turing.uark.edu/~makabir/files/shared/imagine/tut02-vitis-app.mp4)
+3. [Configuring and using the assembler](http://turing.uark.edu/~makabir/files/shared/imagine/tut03-imagine-asm.mp4)
