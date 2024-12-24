@@ -25,7 +25,7 @@ multiply-accumulate (MAC) units.
 
 
 ## Publications
-_Coming Soon ..._
+M. A. Kabir et al., "IMAGine: An In-Memory Accelerated GEMV Engine Overlay," 2024 34th International Conference on Field-Programmable Logic and Applications (FPL), Torino, Italy, 2024, pp. 220-226, doi: 10.1109/FPL64840.2024.00038. [IEEE](https://ieeexplore.ieee.org/abstract/document/10705594), [arXive](https://arxiv.org/abs/2410.04367), [extended arXive](https://arxiv.org/pdf/2410.07546)
 
 
 ## Summary
@@ -49,6 +49,6 @@ Package organization,
 ```
 
 ## Tutorials
-1. [Setting up the Vivado Project](http://turing.uark.edu/~makabir/files/shared/imagine/tut01-vivado-proj.mp4)
-2. [Writing the Vitis application](http://turing.uark.edu/~makabir/files/shared/imagine/tut02-vitis-app.mp4)
-3. [Configuring and using the assembler](http://turing.uark.edu/~makabir/files/shared/imagine/tut03-imagine-asm.mp4)
+1. [Setting up the Vivado Project](https://www.youtube.com/watch?v=tfgE1RbGvGw&list=PLnlOAW0JmWhr_gEKckim1y-9r5rjl5bWq&index=2)
+2. [Writing the Vitis application](https://www.youtube.com/watch?v=FghzXWm2aVg&list=PLnlOAW0JmWhr_gEKckim1y-9r5rjl5bWq&index=3)
+3. [Configuring and using the assembler](https://www.youtube.com/watch?v=4GFyqh0fIAM&list=PLnlOAW0JmWhr_gEKckim1y-9r5rjl5bWq&index=4)
